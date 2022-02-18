@@ -75,35 +75,50 @@ class nlp:
     def sentiment(self, per_lines=1, minsub=0.0, maxsub=1.0, minpol=-1.0, maxpol=1.0):
         ''' Gets polarity and subjectivity of text per given lines (int), stores, and returns tuple (pol,sub).
         '''
-        pol,sub = TextBlob(self.text).sentiment
-        pol,sub = (round(pol,3), round(sub,3))
+
+        # Finds Polarity and subjectivity for a string
+        pol, sub = TextBlob(self.text).sentiment
+        pol, sub = (round(pol,3), round(sub,3))
+
+        # Sets the Polarity and Subjectivity values to an attribute
         if minpol <= pol <= maxpol and minsub <= sub <= maxsub:
             self.M['sentiment_avg'] = pol,sub
         return pol,sub
     
     def count_syllable(self, word):
-        ''' https://stackoverflow.com/questions/46759492/syllable-count-in-python '''
+        ''' Counts the number of syllables in a word
+        https://stackoverflow.com/questions/46759492/syllable-count-in-python '''
+
+        # Sets the list of vowels
         count = 0
         vowels = 'aeiouy'
+
+        # Checks if the first letter is a vowel
         if word[0] in vowels:
             count += 1
-            
+
+        # Iterates through string to see check for consonant followed by vowel
         for i in range(1, len(word)):
             if word[i] in vowels and word[i-1] not in vowels:
                 count += 1
-                
+
+        # Checks if word ends with an e
         if word.endswith('e'):
             count -= 1
-        
-        return 1 if count == 0 else count
+
+        # Sets the minimum count to 1 and then returns it
+        return 1 if count < 1 else count
     
     
     def readability(self):
-        ''' Gunning Fog Formula '''
+        ''' Assesses Readability using the Gunning Fog Formula '''
+
+        # Finds the variables necessary for Gunning Fog Calculation
         sen_length = self.sentence_count()
         words = self.word_tokenize()
         syllables = [self.count_syllable(word) for word in words]
-        
+
+        # Finds percentage of hard words and then performs gunning fog equation
         hard_word_count = [count for count in syllables if count >= 2]
         hard_word_percent = (len(hard_word_count)/ len(words)) * 100
         return 0.4 * (sen_length + hard_word_percent)
