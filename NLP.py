@@ -10,6 +10,8 @@ Created on Wed Feb 16 20:49:21 2022
 import re
 from textblob import TextBlob
 import pandas as pd
+import plotly.graph_objects as go
+from collections import Counter
 
 class nlp:
     
@@ -32,7 +34,7 @@ class nlp:
             row = row + '.'
             self.text += row
         return self.text
-        
+
             
     def sent_tokenize(self):
         ''' Returns list of stripped, tokenized sentences in text '''
@@ -52,23 +54,33 @@ class nlp:
         sent_count = len(self.sent_tokenize())
         self.M['sentence_count'] = sent_count
         return sent_count
-    
+
+    def total_word_count(self):
+        ''' Returns total words in text '''
+        total_word_count = len(self.word_tokenize())
+        self.M['total_word_count'] = total_word_count
+        return total_word_count
+
     def word_count(self):
-        ''' Returns and stores total words in text '''
-        word_count = len(self.word_tokenize())
-        self.M['word_count'] = word_count
+        ''' Returns word counts for each text and stores it'''
+
+        word_count = Counter(self.word_tokenize())
+        word_count = [(key, val) for key, val in word_count.items()]
+        word_count.sort(key=lambda x: x[1])
+
+        self.M['word_counts'] = word_count
         return word_count
     
     def avg_sent_len(self):
         ''' Returns and stores average sentence length for given text '''
-        avg_slen = round(self.word_count() / self.sentence_count(), 3)
+        avg_slen = round(self.total_word_count() / self.sentence_count(), 3)
         self.M['avg_sentence_length'] = avg_slen
         return avg_slen
     
     def avg_word_len(self):
         ''' Returns and stores average word length for given text excluding punctuation '''
         total_wchar = sum([len(word) for word in self.word_tokenize()])
-        avg_wlen = round(total_wchar / self.word_count(), 3)
+        avg_wlen = round(total_wchar / self.total_word_count(), 3)
         self.M['avg_word_length'] = avg_wlen
         return avg_wlen
     
@@ -122,13 +134,62 @@ class nlp:
         hard_word_count = [count for count in syllables if count >= 2]
         hard_word_percent = (len(hard_word_count)/ len(words)) * 100
         return 0.4 * (sen_length + hard_word_percent)
-    
+
+
+    def create_mapping(self, data, src, targ):
+        ''' Create the mapping dictionary for the labels '''
+
+        # Creates a sorted list of all the labels
+        labels = list(data[src]) + list(data[targ])
+        labels = sorted(list(set(labels)))
+
+        # Creates a dictionary mapping the labels to assigned values
+        codes = list(range(len(labels)))
+        code_map = dict(zip(labels, codes))
+
+        # Updates dictionary using the map generated and then returns it
+        data = data.replace({src: code_map, targ: code_map})
+        return data, labels
+
+
+    def wordcount_sankey(self, word_lst=None, K=5):
+        ''' Creates a Sankey Diagram to compare the word count of each file '''
+
+        # Create word_lst if it does not exist
+        if not word_lst:
+            word_lst = []
+
+            for file in self.contained_files:
+                words = getattr(self, file)['word_counts']
+                word_lst = [word[0] for word in words[-K:]]
+
+
+
+
+
+
+        # Updates the data and creates labels
+        data, labels = self.create_mapping(data, src, targ)
+
+        # Creates the link dict for the sankey plot
+        link = {'source': data[src], 'target': data[targ], 'value': data[vals]}
+
+        # Creates the node dict for the sankey plot
+        node = {'pad': 100, 'thickness': 10,
+                'line': {'color': 'black', 'width': 2},
+                'label': labels}
+
+        # Creates the sankey plot and then shows it in browser
+        sk = go.Sankey(link=link, node=node)
+        fig = go.Figure(sk)
+
+
     def __str__(self):
         return self.text
     
     def __repr__(self):
         return self.text
-        
+
            
     
 def main():
