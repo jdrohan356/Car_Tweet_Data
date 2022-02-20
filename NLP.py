@@ -65,8 +65,8 @@ class nlp:
         ''' Returns word counts for each text and stores it'''
 
         word_count = Counter(self.word_tokenize())
-        word_count = [(key, val) for key, val in word_count.items()]
-        word_count.sort(key=lambda x: x[1])
+        # word_count = [(key, val) for key, val in word_count.items()]
+        # word_count.sort(key=lambda x: x[1])
 
         self.M['word_counts'] = word_count
         return word_count
@@ -155,17 +155,24 @@ class nlp:
     def wordcount_sankey(self, word_lst=None, K=5):
         ''' Creates a Sankey Diagram to compare the word count of each file '''
 
-        # Create word_lst if it does not exist
+        word_count_lst = []
+        word_count_map = {}
+        for file in self.contained_files:
+            words = getattr(self, file)['word_counts']
+            word_count_lst[file] = words
+
+            for key, val in words.items():
+                word_count_map[key] = word_count_map.get(key, 0) + 1
+
+        word_count_map = [(key, val) for key, val in word_count_map.items()]
+
+       # Create word_lst if it does not exist
         if not word_lst:
-            word_lst = []
-
-            for file in self.contained_files:
-                words = getattr(self, file)['word_counts']
-                word_lst = [word[0] for word in words[-K:]]
+            word_count_map.sort(key=lambda x: x[1])
+            word_lst = [word[0] for word in word_count_lst[-K:]]
 
 
-
-
+        
 
 
         # Updates the data and creates labels
