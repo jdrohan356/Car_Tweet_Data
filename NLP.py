@@ -135,12 +135,18 @@ class nlp:
         hard_word_percent = (len(hard_word_count)/ len(words)) * 100
         return 0.4 * (sen_length + hard_word_percent)
 
-
-    def create_mapping(self, data, src, targ):
+    @staticmethod
+    def create_mapping(data, word_lst):
         ''' Create the mapping dictionary for the labels '''
 
+        df = pd.DataFrame(columns=['Source', 'Target', 'Value'])
+
+        for key, value in data.items():
+            for word in word_lst:
+                df.loc[len(df.index)] = [key, word, value[word]]
+
         # Creates a sorted list of all the labels
-        labels = list(data[src]) + list(data[targ])
+        labels = list(df['Source']) + list(df['Target'])
         labels = sorted(list(set(labels)))
 
         # Creates a dictionary mapping the labels to assigned values
@@ -148,38 +154,35 @@ class nlp:
         code_map = dict(zip(labels, codes))
 
         # Updates dictionary using the map generated and then returns it
-        data = data.replace({src: code_map, targ: code_map})
+        data = data.replace({'Source': code_map, 'Target': code_map})
         return data, labels
 
 
     def wordcount_sankey(self, word_lst=None, K=5):
         ''' Creates a Sankey Diagram to compare the word count of each file '''
 
-        word_count_lst = []
+        word_count_lst = {}
         word_count_map = {}
         for file in self.contained_files:
             words = getattr(self, file)['word_counts']
-            word_count_lst[file] = words
+            word_count_map[file] = words
 
             for key, val in words.items():
-                word_count_map[key] = word_count_map.get(key, 0) + 1
+                word_count_lst[key] = word_count_lst.get(key, 0) + 1
 
-        word_count_map = [(key, val) for key, val in word_count_map.items()]
 
-       # Create word_lst if it does not exist
         if not word_lst:
-            word_count_map.sort(key=lambda x: x[1])
+            word_count_lst = [(key, val) for key, val in word_count_lst.items()]
+            word_count_lst.sort(key=lambda x: x[1])
             word_lst = [word[0] for word in word_count_lst[-K:]]
 
 
-
-
-
         # Updates the data and creates labels
-        data, labels = self.create_mapping(data, src, targ)
+        data, labels = self.create_mapping(word_count_map, word_lst)
 
         # Creates the link dict for the sankey plot
-        link = {'source': data[src], 'target': data[targ], 'value': data[vals]}
+        link = {'Source': data['Source'], 'Target': data['Target'],
+                'Value': data['Value']}
 
         # Creates the node dict for the sankey plot
         node = {'pad': 100, 'thickness': 10,
