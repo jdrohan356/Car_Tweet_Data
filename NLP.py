@@ -192,6 +192,16 @@ class nlp:
         # Creates the sankey plot and then shows it in browser
         sk = go.Sankey(link=link, node=node)
         fig = go.Figure(sk)
+       
+    def run_all(self, filename):
+        ''' Runs all general analysis methods and returns dictionary with results '''
+        gen_methods = [self.read_text(filename), self.avg_sent_len(),self.word_count(),
+                       self.avg_word_len(), self.sentiment(per_lines='all'), self.readability()]
+        
+        for nlp_method in gen_methods:
+            nlp_method
+            
+            return self.M
 
 
     def __str__(self):
