@@ -172,7 +172,7 @@ class nlp:
             word_lst = [word[0] for word in word_count_lst[-K:]]
 
 
-        
+
 
 
         # Updates the data and creates labels
