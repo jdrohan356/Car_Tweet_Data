@@ -1,18 +1,27 @@
 import requests
 import numpy as np
+import re
 from collections import Counter, defaultdict
-class tweet_nlp:
-    
 
+class tweet_nlp:
+   
     def __init__(self):
         """Constructor"""
         self.data = defaultdict(dict)
     
     @staticmethod
     def _default_parser(filename):
+        
+        columns = ['brand','date','ID','content','retweet_ct','fav_ct']
+        file = pd.read_csv(filename, sep=',',  names=columns)
+        text = [ row.lower() +'.' for row in file['content']]
+        text = [ TextBlob(row).correct for row in text]
+        
         results = {
-            'wordcount': Counter(text_con.split()),
-            'numwords': len(text_con.split()) }
+            'wordcount': Counter(text.split()),
+            'sentencecount': len(re.split('[.!?]+', text.lower())),
+            'numwords': len(text.split()) }
+        
         return results
 
     def load_text(self, filename_ls, label=None, parser=None):
