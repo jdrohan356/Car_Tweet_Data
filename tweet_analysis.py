@@ -36,6 +36,10 @@ class tweet_nlp:
             'numwords': len(text.split()) }
         
         return results  
+    
+    def _save_results(self, label, results):
+        for k, v in results.items():
+            self.data[k][label] = v
              
     def load_text_stop(self, file, label=None, parser=None, stopfile=None):
     
