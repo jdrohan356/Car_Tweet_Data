@@ -126,5 +126,6 @@ class tweet_nlp:
 def main():
     files = ['car_tweets_AUDI.csv','car_tweets_BMW.csv', 'car_tweets_MERCEDES.csv']
     car_data = tweet_nlp(files)
+    tweet_dict = car_data.data.contained_files
     car_data.polar_sent(['car_tweets_AUDI.csv', 'car_tweets_BMW.csv'],['Audi','BWM','Benz'])
     car_data.nlp_seaborn(tweet_dict, files)
