@@ -40,27 +40,28 @@ class tweet_nlp:
     def _save_results(self, label, results):
         for k, v in results.items():
             self.data[k][label] = v
-             
     def load_text_stop(self, file, label=None, parser=None, stopfile=None):
-    
+        columns = ['brand','date','ID','content','retweet_ct','fav_ct']
+        text = pd.read_csv(file, sep=',',  names=columns)
+        
         if stopfile is None:
             stopwords_list = requests.get("https://gist.githubusercontent.com/rg089/35e00abf8941d72d419224cfd5b5925d/raw/12d899b70156fd0041fa9778d657330b024b959c/stopwords.txt").content
             stopwords = stopwords_list.decode().splitlines()
-            text = ' '.join([word for word in nlp.text if word not in stopwords])
+            text = ' '.join([word for word in text if word not in stopwords])
             
         else:
             with open(stopfile) as f:
                 for line in f:
                     stopf = [line.split(',') for line in f]
-            text = ' '.join([word for word in nlp.text.split() if word not in stopf])
+            text = ' '.join([word for word in text.split() if word not in stopf])
             
         if parser is None:
-                results = tweet_nlp._default_parser(file)
+                results = tweet_nlp._default_parser(text)
         else:
-                results = parser(file)
+                results = parser(text)
+                
         if label is None:
-                label = file
-        self._save_results(label, results)
+                label = file 
         
         # A list of common or stop words.  These get filtered from each file automatically 
         #return text
