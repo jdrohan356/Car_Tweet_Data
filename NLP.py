@@ -97,6 +97,18 @@ class nlp:
             self.M['sentiment_avg'] = pol,sub
         return pol,sub
     
+    def sent_leng(self):
+    '''return number of sentences in texts; recognizing one post as one sentence'''
+    return [len(sent.replace(' ','')) for sent in sent_tokenize(self.text)]
+
+    def polar_sent(text):
+    '''return list of polarity scores of each sentence'''
+    return [TextBlob(sent).sentiment[0] for sent in sent_tokenize(self.text)]
+
+    def subj_sent(text):
+    '''return list of subjectivity scores of each sentence'''
+    return [TextBlob(sent).sentiment[1] for sent in sent_tokenize(self.text)]
+    
     def count_syllable(self, word):
         ''' Counts the number of syllables in a word
         https://stackoverflow.com/questions/46759492/syllable-count-in-python '''
