@@ -8,10 +8,6 @@ Created on Wed Feb 16 20:49:21 2022
 
 
 from textblob import TextBlob
-import pandas as pd
-import plotly.graph_objects as go
-import requests
-import numpy as np
 import re
 from textblob import Word
 from collections import Counter, defaultdict
