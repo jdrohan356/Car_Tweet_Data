@@ -1,7 +1,19 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+
+@author: tianyang
+"""
+
 import requests
 import numpy as np
 import re
+import pandas as pd
+from textblob import TextBlob
+from textblob import Word
 from collections import Counter, defaultdict
+import matplotlib.pyplot as plt
+from NLP import nlp
 
 class tweet_nlp:
    
@@ -24,13 +36,13 @@ class tweet_nlp:
         
         return results
 
-    def load_text(self, filename_ls, label=None, parser=None):
+    def load_text(self, file, label=None, parser=None):
         if parser is None:
-            results = texttt._default_parser(file)
+            results = tweet_nlp._default_parser(file)
         else:
             results = parser(file)
         if label is None:
-            label = filename
+            label = file
         self._save_results(label, results)
              
     def load_stop_words(stopfile=None):
