@@ -7,19 +7,49 @@ Created on Wed Feb 16 20:49:21 2022
 """
 
 
-import re
 from textblob import TextBlob
 import pandas as pd
 import plotly.graph_objects as go
-from collections import Counter
+import requests
+import numpy as np
+import re
+from textblob import Word
+from collections import Counter, defaultdict
+import matplotlib.pyplot as plt
+
 
 class nlp:
     
-    def __init__(self, filename):
+    def __init__(self, files):
         ''' Constructor '''
         self.M = {}  # stores text specific analysis variables
         self.text = ''
-        
+        self.contained_files = {}
+
+        self.stop_words = requests.get(
+                "https://gist.githubusercontent.com/rg089/35e00abf8941d72d"
+                "419224cfd5b5925d/raw/12d899b70156fd0041fa9778d657330b024b959c"
+                "/stopwords.txt").content
+
+        for file in files:
+            self.contained_files[file] = self.run_all(file)
+
+
+    def load_stop_words(self, text, stopfile=None):
+        ''' '''
+
+        stop_words = []
+        if stopfile is None:
+            stop_words = self.stop_words.decode().splitlines()
+
+        else:
+            with open(stopfile) as f:
+                for line in f:
+                    stop_words = [line.split(',') for line in f]
+
+        return ' '.join([word for word in text.split() if word not in stop_words])
+
+
     def clean_text(self, t):
         ''' remove everything after the https in the text'''
         split_str = t.split('https', 1)
@@ -28,11 +58,15 @@ class nlp:
             
     def read_text(self, filename):
         ''' Reads given text from file, converts to string and stores '''
-        raw_csv = pd.read_csv(filename, names=['brand', 'date', 'code', 'text', 'unlike', 'like'], sep = ',')
+        raw_csv = pd.read_csv(filename, names=['brand', 'date', 'code', 'text', 'unlike', 'like'], sep=',')
         raw_csv['text'] = raw_csv['text'].apply(lambda x: self.clean_text(x))
+
         for row in raw_csv['text']:
+            row = self.load_stop_words(row.lower())
             row = row + '.'
             self.text += row
+
+        self.M['text'] = self.text
         return self.text
 
             
@@ -65,9 +99,6 @@ class nlp:
         ''' Returns word counts for each text and stores it'''
 
         word_count = Counter(self.word_tokenize())
-        # word_count = [(key, val) for key, val in word_count.items()]
-        # word_count.sort(key=lambda x: x[1])
-
         self.M['word_counts'] = word_count
         return word_count
     
@@ -84,7 +115,7 @@ class nlp:
         self.M['avg_word_length'] = avg_wlen
         return avg_wlen
     
-    def sentiment(self, per_lines=1, minsub=0.0, maxsub=1.0, minpol=-1.0, maxpol=1.0):
+    def sentiment(self, minsub=0.0, maxsub=1.0, minpol=-1.0, maxpol=1.0):
         ''' Gets polarity and subjectivity of text per given lines (int), stores, and returns tuple (pol,sub).
         '''
 
@@ -97,7 +128,7 @@ class nlp:
             self.M['polarity'] = pol
             self.M['subjectivity'] = sub
         return pol,sub
-    
+
     def count_syllable(self, word):
         ''' Counts the number of syllables in a word
         https://stackoverflow.com/questions/46759492/syllable-count-in-python '''
@@ -135,83 +166,20 @@ class nlp:
         hard_word_count = [count for count in syllables if count >= 2]
         hard_word_percent = (len(hard_word_count)/ len(words)) * 100
         score = 0.4 * (sen_length + hard_word_percent)
-        sefl.M['readability'] = score
+        self.M['readability'] = score
         return score
 
-    @staticmethod
-    def create_mapping(data, word_lst):
-        ''' Create the mapping dictionary for the labels '''
-
-        df = pd.DataFrame(columns=['Source', 'Target', 'Value'])
-
-        for key, value in data.items():
-            for word in word_lst:
-                df.loc[len(df.index)] = [key, word, value[word]]
-
-        # Creates a sorted list of all the labels
-        labels = list(df['Source']) + list(df['Target'])
-        labels = sorted(list(set(labels)))
-
-        # Creates a dictionary mapping the labels to assigned values
-        codes = list(range(len(labels)))
-        code_map = dict(zip(labels, codes))
-
-        # Updates dictionary using the map generated and then returns it
-        data = data.replace({'Source': code_map, 'Target': code_map})
-        return data, labels
-
-
-    def wordcount_sankey(self, word_lst=None, K=5):
-        ''' Creates a Sankey Diagram to compare the word count of each file '''
-
-        word_count_lst = {}
-        word_count_map = {}
-        for file in self.contained_files:
-            words = getattr(self, file)['word_counts']
-            word_count_map[file] = words
-
-            for key, val in words.items():
-                word_count_lst[key] = word_count_lst.get(key, 0) + 1
-
-
-        if not word_lst:
-            word_count_lst = [(key, val) for key, val in word_count_lst.items()]
-            word_count_lst.sort(key=lambda x: x[1])
-            word_lst = [word[0] for word in word_count_lst[-K:]]
-
-
-        # Updates the data and creates labels
-        data, labels = self.create_mapping(word_count_map, word_lst)
-
-        # Creates the link dict for the sankey plot
-        link = {'Source': data['Source'], 'Target': data['Target'],
-                'Value': data['Value']}
-
-        # Creates the node dict for the sankey plot
-        node = {'pad': 100, 'thickness': 10,
-                'line': {'color': 'black', 'width': 2},
-                'label': labels}
-
-        # Creates the sankey plot and then shows it in browser
-        sk = go.Sankey(link=link, node=node)
-        fig = go.Figure(sk)
        
     def run_all(self, filename):
         ''' Runs all general analysis methods and returns dictionary with results '''
+        self.M = {}
         gen_methods = [self.read_text(filename), self.avg_sent_len(),self.word_count(),
-                       self.avg_word_len(), self.sentiment(per_lines='all'), self.readability()]
+                       self.avg_word_len(), self.sentiment(), self.readability()]
         
         for nlp_method in gen_methods:
             nlp_method
-            
-            return self.M
 
-
-    def __str__(self):
-        return self.text
-    
-    def __repr__(self):
-        return self.text
+        return self.M
 
            
     
