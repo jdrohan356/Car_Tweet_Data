@@ -6,17 +6,8 @@ Created on Mon Feb 21 12:14:44 2022
 @author: tianyang
 """
 
-from NLP import nlp
-
-from textblob import TextBlob
-import pandas as pd
-import plotly.graph_objects as go
-import requests
-import numpy as np
-import re
-from textblob import Word
-from collections import Counter, defaultdict
-import matplotlib.pyplot as plt
+from NLP import *
+import seaborn as sns
 
 class tweet_nlp:
    
@@ -55,7 +46,6 @@ class tweet_nlp:
         else:
             results = parser(files)
 
-        # A list of common or stop words.  These get filtered from each file automatically
         return results
     
     def polar_sent(self,files,labels):
