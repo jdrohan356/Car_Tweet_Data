@@ -6,21 +6,25 @@ Created on Mon Feb 21 12:14:44 2022
 @author: tianyang
 """
 
+from NLP import nlp
+
+from textblob import TextBlob
+import pandas as pd
+import plotly.graph_objects as go
 import requests
 import numpy as np
 import re
-import pandas as pd
-from textblob import TextBlob
 from textblob import Word
 from collections import Counter, defaultdict
 import matplotlib.pyplot as plt
-from NLP import nlp
 
 class tweet_nlp:
    
-    def __init__(self):
+    def __init__(self, filename):
         """Constructor"""
-        self.data = defaultdict(dict)
+
+        self.data = self.load_text(filename, parser=nlp)
+        
     
     @staticmethod
     def _default_parser(filename):
@@ -40,41 +44,39 @@ class tweet_nlp:
     def _save_results(self, label, results):
         for k, v in results.items():
             self.data[k][label] = v
-    def load_text_stop(self, file, label=None, parser=None, stopfile=None):
-        columns = ['brand','date','ID','content','retweet_ct','fav_ct']
-        text = pd.read_csv(file, sep=',',  names=columns)
-        
-        if stopfile is None:
-            stopwords_list = requests.get("https://gist.githubusercontent.com/rg089/35e00abf8941d72d419224cfd5b5925d/raw/12d899b70156fd0041fa9778d657330b024b959c/stopwords.txt").content
-            stopwords = stopwords_list.decode().splitlines()
-            text = ' '.join([word for word in text if word not in stopwords])
-            
-        else:
-            with open(stopfile) as f:
-                for line in f:
-                    stopf = [line.split(',') for line in f]
-            text = ' '.join([word for word in text.split() if word not in stopf])
-            
+
+    def load_text(self, files, parser=None):
+
+        if type(files) != list:
+            files = [files]
+
         if parser is None:
-                results = tweet_nlp._default_parser(text)
+            results = tweet_nlp._default_parser(files)
         else:
-                results = parser(text)
+            results = parser(files)
+
+        # A list of common or stop words.  These get filtered from each file automatically
+        return results
+    
+    def polar_sent(self,files,labels):
+        
+        for i in range(len(labels)):
+            for file in files:
                 
-        if label is None:
-                label = file 
-        
-        # A list of common or stop words.  These get filtered from each file automatically 
-        #return text
-'''def load_text(self, file, label=None, parser=None):
-        
-        stopwords_list = requests.get("https://gist.githubusercontent.com/rg089/35e00abf8941d72d419224cfd5b5925d/raw/12d899b70156fd0041fa9778d657330b024b959c/stopwords.txt").content
-        stopwords = stopwords_list.decode().splitlines()
-        text = ' '.join([word for word in nlp.text if word not in stopwords])
-        
-        if parser is None:
-            results = tweet_nlp._default_parser(file)
-        else:
-            results = parser(file)
-        if label is None:
-            label = file
-        self._save_results(label, results)'''
+                sent_word = [len(sent.replace(' ','')) for sent in self.data.sent_tokenize()]
+                polar = [TextBlob(sent).sentiment[0] for sent in self.data.sent_tokenize()]
+    
+                plt.subplot(len(labels), 1, i+1) # (rows, columns, panel number)
+                plt.title(labels[i]+' Polarity by Sentence', fontsize=13)
+                plt.bar(sent_word, polar, label=labels[i], color = 'c')
+                plt.xlabel('Sentence Length')
+                plt.xlabel('Polarity Score')
+
+                plt.tight_layout(w_pad=6)
+       
+
+def main():
+
+    car_data = tweet_nlp(['car_tweets_AUDI.csv',
+                     'car_tweets_BMW.csv','car_tweets_MERCEDES.csv'])
+    car_data.polar_sent(['car_tweets_AUDI.csv', 'car_tweets_BMW.csv'],['Audi','BWM','Benz'])
