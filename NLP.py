@@ -94,7 +94,8 @@ class nlp:
 
         # Sets the Polarity and Subjectivity values to an attribute
         if minpol <= pol <= maxpol and minsub <= sub <= maxsub:
-            self.M['sentiment_avg'] = pol,sub
+            self.M['polarity'] = pol
+            self.M['subjectivity'] = sub
         return pol,sub
     
     def count_syllable(self, word):
@@ -133,7 +134,9 @@ class nlp:
         # Finds percentage of hard words and then performs gunning fog equation
         hard_word_count = [count for count in syllables if count >= 2]
         hard_word_percent = (len(hard_word_count)/ len(words)) * 100
-        return 0.4 * (sen_length + hard_word_percent)
+        score = 0.4 * (sen_length + hard_word_percent)
+        sefl.M['readability'] = score
+        return score
 
     @staticmethod
     def create_mapping(data, word_lst):
