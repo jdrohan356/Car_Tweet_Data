@@ -8,6 +8,7 @@ Created on Mon Feb 21 12:14:44 2022
 
 from NLP import *
 import seaborn as sns
+import matplotlib.pyplot as plt
 
 class tweet_nlp:
    
