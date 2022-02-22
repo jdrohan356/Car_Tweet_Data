@@ -8,6 +8,10 @@ Created on Wed Feb 16 20:49:21 2022
 
 
 from textblob import TextBlob
+import pandas as pd
+import plotly.graph_objects as go
+import requests
+import numpy as np
 import re
 from textblob import Word
 from collections import Counter, defaultdict
@@ -16,34 +20,32 @@ import matplotlib.pyplot as plt
 
 class nlp:
     
-    def __init__(self, files):
+    def __init__(self, files,stopfile = None):
         ''' Constructor '''
         self.M = {}  # stores text specific analysis variables
         self.text = ''
         self.contained_files = {}
 
-        self.stop_words = requests.get(
+        
+        if stopfile is None:
+            self.stop_words = requests.get(
                 "https://gist.githubusercontent.com/rg089/35e00abf8941d72d"
                 "419224cfd5b5925d/raw/12d899b70156fd0041fa9778d657330b024b959c"
-                "/stopwords.txt").content
-
-        for file in files:
-            self.contained_files[file] = self.run_all(file)
-
-
-    def load_stop_words(self, text, stopfile=None):
-        ''' '''
-
-        stop_words = []
-        if stopfile is None:
-            stop_words = self.stop_words.decode().splitlines()
-
+                "/stopwords.txt").content.decode().splitlines()
         else:
             with open(stopfile) as f:
-                for line in f:
-                    stop_words = [line.split(',') for line in f]
+               for line in f:
+                   self.stop_words = [line.split(',') for line in f]
 
-        return ' '.join([word for word in text.split() if word not in stop_words])
+        for file in files:
+            brand = re.search('(?<=_)([a-zA-Z]*)(?=\.csv)', file)[0]
+            self.contained_files[brand] = self.run_all(file)
+
+    def load_stop_words(self, text):
+        ''' A list of common or stop words. 
+        These get filtered from each file automatically'''
+        return ' '.join([word for word in text.split() 
+                         if word not in self.stop_words])
 
 
     def clean_text(self, t):
@@ -54,7 +56,9 @@ class nlp:
             
     def read_text(self, filename):
         ''' Reads given text from file, converts to string and stores '''
-        raw_csv = pd.read_csv(filename, names=['brand', 'date', 'code', 'text', 'unlike', 'like'], sep=',')
+        raw_csv = pd.read_csv(filename, names=['brand', 'date', 
+                                               'code', 'text', 
+                                               'unlike', 'like'], sep=',')
         raw_csv['text'] = raw_csv['text'].apply(lambda x: self.clean_text(x))
 
         for row in raw_csv['text']:
@@ -69,11 +73,13 @@ class nlp:
     def sent_tokenize(self):
         ''' Returns list of stripped, tokenized sentences in text '''
         sents = re.split('[.!?]+', self.text.lower())
+        self.M['Sents'] = sents
         return sents
     
     def word_tokenize(self):
         ''' Returns list of stripped, tokenized words in text '''
-        words = [re.sub('[^\w\s]', '', word) for word in re.split('\s+', self.text.lower())]
+        words = [re.sub('[^\w\s]', '', word) for word in 
+                 re.split('\s+', self.text.lower())]
         while("" in words):
             words.remove("")
         return words
@@ -105,15 +111,16 @@ class nlp:
         return avg_slen
     
     def avg_word_len(self):
-        ''' Returns and stores average word length for given text excluding punctuation '''
+        ''' Returns and stores average word length for given 
+        text excluding punctuation '''
         total_wchar = sum([len(word) for word in self.word_tokenize()])
         avg_wlen = round(total_wchar / self.total_word_count(), 3)
         self.M['avg_word_length'] = avg_wlen
         return avg_wlen
     
     def sentiment(self, minsub=0.0, maxsub=1.0, minpol=-1.0, maxpol=1.0):
-        ''' Gets polarity and subjectivity of text per given lines (int), stores, and returns tuple (pol,sub).
-        '''
+        ''' Gets polarity and subjectivity of text per given lines (int), 
+        stores, and returns tuple (pol,sub).'''
 
         # Finds Polarity and subjectivity for a string
         pol, sub = TextBlob(self.text).sentiment
@@ -127,7 +134,7 @@ class nlp:
 
     def count_syllable(self, word):
         ''' Counts the number of syllables in a word
-        https://stackoverflow.com/questions/46759492/syllable-count-in-python '''
+        https://stackoverflow.com/questions/46759492/syllable-count-in-python'''
 
         # Sets the list of vowels
         count = 0
@@ -154,7 +161,7 @@ class nlp:
         ''' Assesses Readability using the Gunning Fog Formula '''
 
         # Finds the variables necessary for Gunning Fog Calculation
-        sen_length = self.sentence_count()
+        sen_length = self.avg_sent_len()
         words = self.word_tokenize()
         syllables = [self.count_syllable(word) for word in words]
 
@@ -163,14 +170,19 @@ class nlp:
         hard_word_percent = (len(hard_word_count)/ len(words)) * 100
         score = 0.4 * (sen_length + hard_word_percent)
         self.M['readability'] = score
+       
         return score
 
        
     def run_all(self, filename):
-        ''' Runs all general analysis methods and returns dictionary with results '''
+        ''' Runs all general analysis methods and 
+        returns dictionary with results '''
         self.M = {}
-        gen_methods = [self.read_text(filename), self.avg_sent_len(),self.word_count(),
-                       self.avg_word_len(), self.sentiment(), self.readability()]
+        # Runs all functions selected as below
+        gen_methods = [self.read_text(filename), self.avg_sent_len(),
+                       self.word_count(),self.avg_word_len(),self.sentiment(), 
+                       self.readability(),self.sentence_count(),
+                       self.sent_tokenize()]
         
         for nlp_method in gen_methods:
             nlp_method
