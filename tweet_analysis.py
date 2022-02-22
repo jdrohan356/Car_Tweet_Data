@@ -165,7 +165,7 @@ class tweet_nlp:
                                                 figsize=(10, 10), sharex=True)
         x = ['Audi','BMW','Mercedes']
         y1 = df.avg_sentence_length
-        sns.barplot(x=x,y=y1,ax=ax1, palette='RdPu')
+        sns.barplot(x=x,y=y1,ax=ax1, palette='BuPu')
         ax1.set_ylabel('Average Sentence Length')
         ax1.set_title('Comparison of Text Structural Measures')
         ax1.set_xlabel('')
